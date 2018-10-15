@@ -1,0 +1,82 @@
+using UnityEngine;
+using System.Collections.Generic;
+ 
+public class Test : MonoBehaviour {
+    float cardWidth = 152;
+    float cardHeight = 212;
+    private Vector2 touchFirst = Vector2.zero; //手指开始按下的位置  
+    private Vector2 touchSecond = Vector2.zero; //手指拖动的位置   
+    private float timer;//时间计数器    
+    public float offsetTime = 0.1f;//判断的时间间隔  
+ 
+    public Transform[] HandCards;
+    List<Transform> cardsList = new List<Transform>(); 
+ 
+    void OnGUI()   // 滑动方法02  
+    {
+        if (Event.current.type == EventType.MouseDown) //判断当前手指是按下事件  
+        {
+            Debug.Log(Screen.width);
+            touchFirst = Event.current.mousePosition;//记录开始按下的位置  
+            Debug.Log("滑动开始：" + touchFirst.x + "," + touchFirst.y);
+        }
+ 
+        if (Event.current.type == EventType.MouseDrag)
+        {
+            timer += Time.deltaTime;  //计时器  
+ 
+            if (timer > offsetTime)
+            {
+                timer = 0;
+                touchSecond = Event.current.mousePosition; //记录结束下的位置  
+                Vector2 slideDirection = touchFirst - touchSecond;//开始减去结束
+                float x = slideDirection.x;
+                float y = slideDirection.y;
+                
+                //处理范围内的牌，加入选牌列表
+                cardsList.Clear();
+                for (int i = 0; i < HandCards.Length; i++)
+                {
+                    if (HandCards[i].parent.gameObject.activeSelf)
+                    {
+                        float lossyScaleX = HandCards[i].lossyScale.x;                                                                                  //屏幕缩放损耗
+                        float leftPiont = RectTransformUtility.WorldToScreenPoint(null, HandCards[i].position).x - cardWidth * lossyScaleX / 2;         //牌左侧点
+                        float rightPoint = RectTransformUtility.WorldToScreenPoint(null, HandCards[i].position).x + cardWidth * lossyScaleX / 2;        //牌右侧点
+                        float lossyScaleY = HandCards[i].lossyScale.y;
+                        float topPoint = Screen.height - RectTransformUtility.WorldToScreenPoint(null, HandCards[i].position).y + cardHeight * lossyScaleY / 2;    //牌上侧点
+                        float bottomPoint = Screen.height - RectTransformUtility.WorldToScreenPoint(null, HandCards[i].position).y - cardHeight * lossyScaleY / 2; //牌下侧点
+                        if (x > 0)  //向左滑动
+                        {
+                            if ((leftPiont > touchSecond.x && leftPiont < touchFirst.x))
+                            {
+                                if (touchSecond.y > bottomPoint && touchSecond.y < topPoint)
+                                {
+                                    cardsList.Add(HandCards[i]);
+                                }
+                            }
+                        }
+                        else        //向右滑动
+                        {
+                            if (((leftPiont < touchSecond.x && leftPiont > touchFirst.x)))
+                            {
+                                if (touchSecond.y > bottomPoint && touchSecond.y < topPoint)
+                                {
+                                    cardsList.Add(HandCards[i]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else if (Event.current.type == EventType.MouseUp)
+        {
+            //选中的牌操作
+            for (int i = 0; i < cardsList.Count; i++)
+            {
+                cardsList[i].localPosition = new Vector3(cardsList[i].localPosition.x, cardsList[i].localPosition.y + 50, 0);
+            }
+            cardsList.Clear();
+        }
+    }
+}
